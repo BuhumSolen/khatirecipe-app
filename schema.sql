@@ -86,9 +86,9 @@ CREATE TABLE IF NOT EXISTS notification (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert default admin user (password: admin123)
+-- Insert default admin user (password: Angvaiti@1)
 INSERT OR IGNORE INTO admin (id, username, password, email, full_name, user_role) 
-VALUES (1, 'admin', '$2a$10$rZ9qX5YhV4kqL6jEZxXKxeGP0XN0YXxH5U8qHPmY7LKzH9YN0YN0Y', 'admin@recipeapp.com', 'Administrator', '100');
+VALUES (1, 'buhumsolen', '$2b$10$Q9mymwbeBmUPvCqNsko4C.arlhWgzPlx9TbsRkAYR/up3RK.FavNS', 'buhumsolen@recipeapp.com', 'Buhum Solen', '100');
 
 -- Insert default settings
 INSERT OR IGNORE INTO settings (id, app_name, api_key, package_name) 
