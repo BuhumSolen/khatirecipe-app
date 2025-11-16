@@ -18,7 +18,7 @@ export default function LoginPage() {
     // Placeholder for authentication logic
     // In production, this would call your API endpoint
     setTimeout(() => {
-      if (username === 'admin' && password === 'admin123') {
+      if (username === 'buhumsolen' && password === 'Angvaiti@1') {
         // Redirect to dashboard
         window.location.href = '/dashboard';
       } else {
@@ -93,12 +93,6 @@ export default function LoginPage() {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Default credentials: <span className="font-mono font-semibold">admin / admin123</span>
-            </p>
-          </div>
         </div>
 
         {/* Back Link */}
