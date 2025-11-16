@@ -6,7 +6,7 @@ pages_build_output_dir = "out"
 [[d1_databases]]
 binding = "DB"
 database_name = "recipe-db"
-database_id = "your-database-id"  # Replace with actual D1 database ID after creation
+database_id = "83ef3aee-c12b-4a9c-a528-d9a20885a74a"
 
 # R2 Storage binding (for image uploads)
 [[r2_buckets]]
