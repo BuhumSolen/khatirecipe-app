@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Eye, ChefHat } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, ChefHat, Search, Star, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Recipe {
   id: number;
@@ -16,12 +16,29 @@ interface Recipe {
 
 export default function RecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const recipesPerPage = 10;
 
   useEffect(() => {
     fetchRecipes();
   }, []);
+
+  useEffect(() => {
+    // Filter recipes based on search query
+    if (searchQuery.trim() === '') {
+      setFilteredRecipes(recipes);
+    } else {
+      const filtered = recipes.filter(recipe =>
+        recipe.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredRecipes(filtered);
+    }
+    setCurrentPage(1); // Reset to first page when searching
+  }, [searchQuery, recipes]);
 
   const fetchRecipes = async () => {
     try {
@@ -30,6 +47,7 @@ export default function RecipesPage() {
       
       if (data.success) {
         setRecipes(data.data);
+        setFilteredRecipes(data.data);
       } else {
         setError(data.error || 'Failed to load recipes');
       }
@@ -51,7 +69,6 @@ export default function RecipesPage() {
       const data = await response.json();
       
       if (data.success) {
-        // Refresh recipes list
         fetchRecipes();
       } else {
         alert('Failed to delete recipe');
@@ -59,6 +76,48 @@ export default function RecipesPage() {
     } catch (err) {
       alert('Failed to delete recipe');
     }
+  };
+
+  const toggleFeatured = async (id: number, currentFeatured: number) => {
+    const newFeatured = currentFeatured === 1 ? 0 : 1;
+    
+    // Check if trying to add to featured and already have 10
+    if (newFeatured === 1) {
+      const featuredCount = recipes.filter(r => r.featured === 1).length;
+      if (featuredCount >= 10) {
+        alert('Maximum 10 featured recipes allowed!');
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch(`/api/recipes/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: newFeatured })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        fetchRecipes();
+      } else {
+        alert('Failed to update featured status');
+      }
+    } catch (err) {
+      alert('Failed to update featured status');
+    }
+  };
+
+  // Pagination calculations
+  const indexOfLastRecipe = currentPage * recipesPerPage;
+  const indexOfFirstRecipe = indexOfLastRecipe - recipesPerPage;
+  const currentRecipes = filteredRecipes.slice(indexOfFirstRecipe, indexOfLastRecipe);
+  const totalPages = Math.ceil(filteredRecipes.length / recipesPerPage);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -97,6 +156,25 @@ export default function RecipesPage() {
             <Plus className="w-5 h-5" />
             Add New Recipe
           </Link>
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="Search recipes by title..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+            />
+          </div>
+          {searchQuery && (
+            <p className="mt-2 text-sm text-gray-600">
+              Found {filteredRecipes.length} recipe{filteredRecipes.length !== 1 ? 's' : ''}
+            </p>
+          )}
         </div>
 
         {loading && (
@@ -153,7 +231,7 @@ export default function RecipesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {recipes.map((recipe) => (
+                {currentRecipes.map((recipe) => (
                   <tr key={recipe.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4">
                       <div className="font-medium text-gray-900">{recipe.title}</div>
@@ -185,8 +263,19 @@ export default function RecipesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => toggleFeatured(recipe.id, recipe.featured)}
+                          className={`p-2 rounded transition ${
+                            recipe.featured === 1
+                              ? 'text-yellow-600 hover:bg-yellow-50'
+                              : 'text-gray-400 hover:bg-gray-50'
+                          }`}
+                          title={recipe.featured === 1 ? 'Remove from Featured' : 'Add to Featured'}
+                        >
+                          <Star className={`w-4 h-4 ${recipe.featured === 1 ? 'fill-current' : ''}`} />
+                        </button>
                         <Link
-                          href={`/dashboard/recipes/${recipe.id}`}
+                          href={`/dashboard/recipes/edit?id=${recipe.id}`}
                           className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
                           title="Edit"
                         >
@@ -205,6 +294,50 @@ export default function RecipesPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && !error && filteredRecipes.length > recipesPerPage && (
+          <div className="mt-6 flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              Showing {indexOfFirstRecipe + 1} to {Math.min(indexOfLastRecipe, filteredRecipes.length)} of {filteredRecipes.length} recipes
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Previous
+              </button>
+              
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    className={`px-4 py-2 rounded-lg ${
+                      currentPage === page
+                        ? 'bg-orange-500 text-white'
+                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
       </main>
