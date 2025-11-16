@@ -1,6 +1,6 @@
 name = "recipe-admin-panel"
 compatibility_date = "2024-11-16"
-pages_build_output_dir = ".vercel/output/static"
+pages_build_output_dir = "out"
 
 # D1 Database binding
 [[d1_databases]]
