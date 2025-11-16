@@ -15,17 +15,28 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    // Placeholder for authentication logic
-    // In production, this would call your API endpoint
-    setTimeout(() => {
-      if (username === 'buhumsolen' && password === 'Angvaiti@1') {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(data.data));
         // Redirect to dashboard
         window.location.href = '/dashboard';
       } else {
-        setError('Invalid username or password');
+        setError(data.error || 'Invalid username or password');
         setLoading(false);
       }
-    }, 1000);
+    } catch (error) {
+      setError('Login failed. Please try again.');
+      setLoading(false);
+    }
   };
 
   return (
