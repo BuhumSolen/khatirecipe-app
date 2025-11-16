@@ -2,8 +2,47 @@
 
 import { ChefHat, BookOpen, FolderOpen, Settings, Bell, LogOut } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+
+interface Stats {
+  totalRecipes: number;
+  totalCategories: number;
+  totalViews: number;
+  featuredRecipes: number;
+}
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<Stats>({
+    totalRecipes: 0,
+    totalCategories: 0,
+    totalViews: 0,
+    featuredRecipes: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/stats');
+      const data = await response.json();
+      if (data.success) {
+        setStats(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load stats');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -19,7 +58,10 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-500">Cloudflare Edition</p>
               </div>
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition">
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-gray-900 transition"
+            >
               <LogOut className="w-5 h-5" />
               <span>Logout</span>
             </button>
@@ -40,7 +82,9 @@ export default function DashboardPage() {
               </div>
               <span className="text-sm text-gray-500">Total</span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900">24</h3>
+            <h3 className="text-2xl font-bold text-gray-900">
+              {loading ? '...' : stats.totalRecipes}
+            </h3>
             <p className="text-sm text-gray-600 mt-1">Recipes</p>
           </div>
 
@@ -51,19 +95,23 @@ export default function DashboardPage() {
               </div>
               <span className="text-sm text-gray-500">Active</span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900">6</h3>
+            <h3 className="text-2xl font-bold text-gray-900">
+              {loading ? '...' : stats.totalCategories}
+            </h3>
             <p className="text-sm text-gray-600 mt-1">Categories</p>
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <div className="bg-purple-100 p-3 rounded-lg">
-                <Bell className="w-6 h-6 text-purple-600" />
+                <BookOpen className="w-6 h-6 text-purple-600" />
               </div>
-              <span className="text-sm text-gray-500">Sent</span>
+              <span className="text-sm text-gray-500">Featured</span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900">12</h3>
-            <p className="text-sm text-gray-600 mt-1">Notifications</p>
+            <h3 className="text-2xl font-bold text-gray-900">
+              {loading ? '...' : stats.featuredRecipes}
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">Featured Recipes</p>
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -71,10 +119,12 @@ export default function DashboardPage() {
               <div className="bg-orange-100 p-3 rounded-lg">
                 <Settings className="w-6 h-6 text-orange-600" />
               </div>
-              <span className="text-sm text-gray-500">Status</span>
+              <span className="text-sm text-gray-500">Total</span>
             </div>
-            <h3 className="text-2xl font-bold text-gray-900">Active</h3>
-            <p className="text-sm text-gray-600 mt-1">App Status</p>
+            <h3 className="text-2xl font-bold text-gray-900">
+              {loading ? '...' : stats.totalViews.toLocaleString()}
+            </h3>
+            <p className="text-sm text-gray-600 mt-1">Views</p>
           </div>
         </div>
 
@@ -115,30 +165,6 @@ export default function DashboardPage() {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Settings</h3>
             <p className="text-gray-600">Configure app settings</p>
           </Link>
-        </div>
-
-        {/* Info Banner */}
-        <div className="mt-8 bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 rounded-xl">
-          <h3 className="text-xl font-semibold mb-2">🎉 Welcome to Your New Admin Panel!</h3>
-          <p className="mb-4">
-            This admin panel is now running on Cloudflare Pages - completely serverless and free!
-          </p>
-          <div className="flex gap-3">
-            <a 
-              href="https://developers.cloudflare.com/pages/" 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-4 py-2 bg-white text-orange-500 rounded-lg font-semibold hover:bg-gray-100 transition"
-            >
-              Learn More
-            </a>
-            <Link 
-              href="/dashboard/settings"
-              className="px-4 py-2 bg-orange-600 text-white rounded-lg font-semibold hover:bg-orange-700 transition"
-            >
-              Configure Settings
-            </Link>
-          </div>
         </div>
       </main>
     </div>
