@@ -19,8 +19,15 @@ export default function LoginPage() {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        cache: 'no-store',
+        body: JSON.stringify({ 
+          username: username.trim(), 
+          password: password 
+        })
       });
 
       const data = await response.json();
@@ -33,7 +40,8 @@ export default function LoginPage() {
         setLoading(false);
       }
     } catch (error) {
-      setError('Invalid Username or Password!');
+      console.error('Login error:', error);
+      setError('Connection error. Please try again.');
       setLoading(false);
     }
   };
