@@ -3,24 +3,31 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 
 interface Category {
   cid: number;
   category_name: string;
 }
 
-export default function AddRecipePage() {
+export default function EditRecipePage() {
   const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
+  
   const [categories, setCategories] = useState<Category[]>([]);
   const [uploadType, setUploadType] = useState('Post');
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   
   const [recipeTitle, setRecipeTitle] = useState('');
   const [recipeTime, setRecipeTime] = useState('');
   const [catId, setCatId] = useState('');
   const [recipeDescription, setRecipeDescription] = useState('');
+  const [currentImage, setCurrentImage] = useState('');
+  const [currentVideo, setCurrentVideo] = useState('');
+  const [currentVideoId, setCurrentVideoId] = useState('');
   
   // Post type
   const [postImage, setPostImage] = useState<File | null>(null);
@@ -39,7 +46,10 @@ export default function AddRecipePage() {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+    if (id) {
+      fetchRecipe();
+    }
+  }, [id]);
 
   const fetchCategories = async () => {
     try {
@@ -50,6 +60,35 @@ export default function AddRecipePage() {
       }
     } catch (err) {
       console.error('Failed to load categories');
+    }
+  };
+
+  const fetchRecipe = async () => {
+    try {
+      const response = await fetch(`/api/recipes/${id}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        const recipe = data.data;
+        setRecipeTitle(recipe.recipe_title);
+        setRecipeTime(recipe.recipe_time);
+        setCatId(recipe.cat_id);
+        setRecipeDescription(recipe.recipe_description);
+        setUploadType(recipe.content_type);
+        setCurrentImage(recipe.recipe_image);
+        setCurrentVideo(recipe.video_url);
+        setCurrentVideoId(recipe.video_id);
+        
+        if (recipe.content_type === 'youtube') {
+          setYoutubeUrl(recipe.video_url || '');
+        } else if (recipe.content_type === 'Url') {
+          setVideoUrl(recipe.video_url || '');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load recipe');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -64,6 +103,8 @@ export default function AddRecipePage() {
       formData.append('recipe_time', recipeTime);
       formData.append('recipe_description', recipeDescription);
       formData.append('upload_type', uploadType);
+      formData.append('old_image', currentImage);
+      formData.append('old_video', currentVideo);
 
       if (uploadType === 'Post') {
         if (postImage) formData.append('post_image', postImage);
@@ -80,24 +121,22 @@ export default function AddRecipePage() {
         if (videoFile) formData.append('video', videoFile);
       }
 
-      const response = await fetch('/api/recipes', {
-        method: 'POST',
+      const response = await fetch(`/api/recipes/${id}`, {
+        method: 'PUT',
         body: formData
       });
       
       const data = await response.json();
       
       if (data.success) {
-        setMessage('Recipes added successfully...');
-        setTimeout(() => {
-          router.push('/dashboard/recipes');
-        }, 1500);
+        setMessage('Changes Saved...');
+        setTimeout(() => setMessage(''), 3000);
       } else {
-        alert('Failed to add recipe');
+        alert('Failed to update recipe');
         setSaving(false);
       }
     } catch (err) {
-      alert('Failed to add recipe');
+      alert('Failed to update recipe');
       setSaving(false);
     }
   };
@@ -115,6 +154,10 @@ export default function AddRecipePage() {
     input.click();
   };
 
+  if (loading) {
+    return <DashboardLayout><p>Loading...</p></DashboardLayout>;
+  }
+
   return (
     <DashboardLayout>
       <ol className="breadcrumb" style={{ display: 'flex', listStyle: 'none', gap: '8px', fontSize: '14px' }}>
@@ -122,16 +165,16 @@ export default function AddRecipePage() {
         <li style={{ color: '#666' }}>/</li>
         <li><Link href="/dashboard/recipes" style={{ color: '#2196f3', textDecoration: 'none' }}>Manage Recipes</Link></li>
         <li style={{ color: '#666' }}>/</li>
-        <li style={{ color: '#666' }}>Add Recipes</li>
+        <li style={{ color: '#666' }}>Edit Recipe</li>
       </ol>
 
       <div style={{ padding: '0' }}>
         <form onSubmit={handleSubmit} encType="multipart/form-data">
           <div className="card corner-radius">
             <div className="header" style={{ padding: '20px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', textTransform: 'uppercase' }}>ADD RECIPES</h2>
+              <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', textTransform: 'uppercase' }}>EDIT RECIPE</h2>
               <button type="submit" disabled={saving} className="button button-rounded btn-offset bg-blue waves-effect pull-right">
-                {saving ? 'PUBLISHING...' : 'PUBLISH'}
+                {saving ? 'UPDATING...' : 'UPDATE'}
               </button>
             </div>
 
@@ -151,14 +194,14 @@ export default function AddRecipePage() {
                   <div className="form-group">
                     <div className="font-12" style={{ marginBottom: '8px' }}><b>Recipe Title *</b></div>
                     <div className="form-line">
-                      <input type="text" className="form-control" value={recipeTitle} onChange={(e) => setRecipeTitle(e.target.value)} placeholder="Recipe Title" required />
+                      <input type="text" className="form-control" value={recipeTitle} onChange={(e) => setRecipeTitle(e.target.value)} required />
                     </div>
                   </div>
                   
                   <div className="form-group">
                     <div className="font-12" style={{ marginBottom: '8px' }}><b>Recipe Time *</b></div>
                     <div className="form-line">
-                      <input type="text" className="form-control" value={recipeTime} onChange={(e) => setRecipeTime(e.target.value)} placeholder="Recipe Time" required />
+                      <input type="text" className="form-control" value={recipeTime} onChange={(e) => setRecipeTime(e.target.value)} required />
                     </div>
                   </div>
 
@@ -182,16 +225,24 @@ export default function AddRecipePage() {
                     </select>
                   </div>
 
+                  {/* Current Image Display */}
+                  {currentImage && uploadType !== 'youtube' && (
+                    <div style={{ marginBottom: '15px' }}>
+                      <div className="font-12" style={{ marginBottom: '8px' }}><b>Current Image</b></div>
+                      <img src={`/upload/${currentImage}`} alt="Current" style={{ maxWidth: '200px', borderRadius: '6px' }} />
+                    </div>
+                  )}
+
                   {/* Post Type */}
                   {uploadType === 'Post' && (
                     <div>
-                      <div className="font-12 ex1" style={{ marginBottom: '8px' }}><b>Image Primary ( jpg / png ) *</b></div>
+                      <div className="font-12 ex1" style={{ marginBottom: '8px' }}><b>Change Image Primary (Optional)</b></div>
                       <div className="form-group">
-                        <input type="file" accept="image/*" onChange={(e) => setPostImage(e.target.files?.[0] || null)} required />
+                        <input type="file" accept="image/*" onChange={(e) => setPostImage(e.target.files?.[0] || null)} />
                       </div>
 
                       <div>
-                        <div className="font-12 ex1" style={{ marginBottom: '8px' }}><b>Image Optional ( jpg / png )</b></div>
+                        <div className="font-12 ex1" style={{ marginBottom: '8px' }}><b>Add More Images (Optional)</b></div>
                         {optionalImages.map((img, idx) => (
                           <div key={idx} style={{ marginBottom: '10px', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
                             {img.name}
@@ -216,7 +267,7 @@ export default function AddRecipePage() {
                   {uploadType === 'Url' && (
                     <div>
                       <div className="form-group">
-                        <div className="font-12" style={{ marginBottom: '8px' }}><b>Thumbnail Image</b></div>
+                        <div className="font-12" style={{ marginBottom: '8px' }}><b>Change Thumbnail (Optional)</b></div>
                         <input type="file" accept="image/*" onChange={(e) => setUrlImage(e.target.files?.[0] || null)} />
                       </div>
                       <div className="form-group">
@@ -232,12 +283,12 @@ export default function AddRecipePage() {
                   {uploadType === 'Upload' && (
                     <div>
                       <div className="form-group">
-                        <div className="font-12" style={{ marginBottom: '8px' }}><b>Recipe Image *</b></div>
-                        <input type="file" accept="image/*" onChange={(e) => setUploadImage(e.target.files?.[0] || null)} required />
+                        <div className="font-12" style={{ marginBottom: '8px' }}><b>Change Recipe Image (Optional)</b></div>
+                        <input type="file" accept="image/*" onChange={(e) => setUploadImage(e.target.files?.[0] || null)} />
                       </div>
                       <div className="form-group">
-                        <div className="font-12" style={{ marginBottom: '8px' }}><b>Video File *</b></div>
-                        <input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files?.[0] || null)} required />
+                        <div className="font-12" style={{ marginBottom: '8px' }}><b>Change Video File (Optional)</b></div>
+                        <input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files?.[0] || null)} />
                       </div>
                     </div>
                   )}

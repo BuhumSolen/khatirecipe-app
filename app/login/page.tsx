@@ -1,10 +1,11 @@
 'use client';
 
-import { ChefHat } from 'lucide-react';
-import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,92 +26,92 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(data.data));
-        // Redirect to dashboard
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
       } else {
-        setError(data.error || 'Invalid username or password');
+        setError(data.error || 'Invalid Username or Password!');
         setLoading(false);
       }
     } catch (error) {
-      setError('Login failed. Please try again.');
+      setError('Invalid Username or Password!');
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        {/* Logo and Title */}
-        <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="bg-orange-500 p-3 rounded-xl">
-              <ChefHat className="w-12 h-12 text-white" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Admin Login
-          </h1>
-          <p className="text-gray-600">
-            Sign in to manage your recipes
-          </p>
-        </div>
-
-        {/* Login Form */}
-        <div className="bg-white rounded-xl shadow-lg p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
-                placeholder="Enter your username"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition"
-                placeholder="Enter your password"
-                required
-              />
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {error}
+    <div className="login-page poppins">
+      <div className="login-box">
+        <div className="card corner-radius" style={{ background: 'white', padding: '40px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '20px' }}>
+                <Image 
+                  src="/ic_launcher.png" 
+                  alt="App Icon" 
+                  width={100} 
+                  height={100}
+                  style={{ display: 'inline-block' }}
+                />
               </div>
-            )}
+              
+              <div style={{ marginBottom: '10px', fontSize: '18px', fontWeight: '600', textTransform: 'uppercase' }}>
+                YOUR RECIPES APP
+              </div>
+              
+              {error && (
+                <div style={{ marginBottom: '20px', color: '#E91E63', fontSize: '14px' }}>
+                  {error}
+                </div>
+              )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Signing in...' : 'Sign In'}
-            </button>
-          </form>
-        </div>
+              <div className="input-group" style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: '4px' }}>
+                <span style={{ padding: '12px', background: '#f5f5f5', borderRight: '1px solid #e0e0e0' }}>
+                  <span className="material-icons">person</span>
+                </span>
+                <div className="form-line" style={{ flex: 1 }}>
+                  <input
+                    type="text"
+                    className="form-control"
+                    name="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="Username"
+                    required
+                    style={{ border: 'none' }}
+                  />
+                </div>
+              </div>
 
-        {/* Back Link */}
-        <div className="mt-6 text-center">
-          <Link href="/" className="text-orange-600 hover:text-orange-700 text-sm font-medium">
-            ← Back to Home
-          </Link>
+              <div className="input-group" style={{ marginBottom: '25px', display: 'flex', alignItems: 'center', border: '1px solid #e0e0e0', borderRadius: '4px' }}>
+                <span style={{ padding: '12px', background: '#f5f5f5', borderRight: '1px solid #e0e0e0' }}>
+                  <span className="material-icons">lock</span>
+                </span>
+                <div className="form-line" style={{ flex: 1 }}>
+                  <input
+                    type="password"
+                    className="form-control"
+                    name="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    required
+                    style={{ border: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  className="button button-rounded waves-effect waves-float"
+                  type="submit"
+                  disabled={loading}
+                  style={{ opacity: loading ? 0.7 : 1 }}
+                >
+                  {loading ? 'LOGGING IN...' : 'LOGIN'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

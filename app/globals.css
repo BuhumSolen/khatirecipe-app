@@ -1,26 +1,473 @@
-@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --blue-primary: #2196f3;
+  --blue-dark: #1976d2;
+  --blue-light: #42a5f5;
+  --grey-bg: #f4f6f9;
+  --card-bg: #ffffff;
+  --text-dark: #333333;
+  --text-muted: #666666;
+  --border-color: #e0e0e0;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--grey-bg);
+  color: var(--text-dark);
+  line-height: 1.6;
+}
+
+.poppins {
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Material Design Cards */
+.card {
+  background: var(--card-bg);
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.corner-radius {
+  border-radius: 6px;
+}
+
+/* Blue Theme */
+.bg-blue {
+  background-color: var(--blue-primary) !important;
+  color: white;
+}
+
+.theme-blue {
+  background-color: var(--grey-bg);
+}
+
+/* Login Page */
+.login-page {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.login-box {
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+}
+
+/* Buttons */
+.button {
+  background-color: var(--blue-primary);
+  color: white;
+  border: none;
+  padding: 10px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.button:hover {
+  background-color: var(--blue-dark);
+  box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+}
+
+.button-rounded {
+  border-radius: 24px;
+}
+
+/* Material Icons */
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  vertical-align: middle;
+}
+
+/* Table Styles */
+.table {
+  width: 100%;
+  margin-bottom: 1rem;
+  background-color: transparent;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  vertical-align: middle;
+  border-top: 1px solid var(--border-color);
+}
+
+.table thead th {
+  vertical-align: bottom;
+  border-bottom: 2px solid var(--border-color);
+  font-weight: 600;
+  color: var(--text-dark);
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Form Styles */
+.form-control {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-dark);
+  background-color: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: var(--blue-primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.form-line {
+  position: relative;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 260px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: #fff;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  overflow-y: auto;
+}
+
+.sidebar .menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar .menu li {
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar .menu li.header {
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sidebar .menu li a {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  color: var(--text-dark);
+  text-decoration: none;
+  transition: background 0.3s;
+}
+
+.sidebar .menu li a:hover {
+  background: rgba(33, 150, 243, 0.05);
+}
+
+.sidebar .menu li.active a {
+  background: var(--blue-primary);
+  color: white;
+}
+
+.sidebar .menu li a .material-icons {
+  margin-right: 12px;
+  font-size: 20px;
+}
+
+/* Navbar */
+.navbar {
+  background: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 0 20px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  position: fixed;
+  top: 0;
+  left: 260px;
+  right: 0;
+  z-index: 999;
+}
+
+/* Content */
+.content {
+  margin-left: 260px;
+  margin-top: 60px;
+  padding: 20px;
+  min-height: calc(100vh - 60px);
+}
+
+/* Breadcrumb */
+.breadcrumb {
+  background: white;
+  padding: 12px 20px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Alert */
+.alert {
+  padding: 12px 20px;
+  margin-bottom: 20px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.alert-info {
+  background-color: #e3f2fd;
+  border-color: #90caf9;
+  color: #1976d2;
+}
+
+/* Image Corners */
+.img-corner-radius {
+  border-radius: 6px;
+}
+
+/* Uppercase */
+.uppercase {
+  text-transform: uppercase;
+}
+
+/* Utilities */
+.waves-effect {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Checkboxes */
+.filled-in[type="checkbox"]:checked + label:after {
+  border-right: 2px solid #2196f3;
+  border-bottom: 2px solid #2196f3;
+}
+
+.filled-in[type="checkbox"] {
+  position: relative;
+  opacity: 0;
+  margin: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.filled-in[type="checkbox"] + label {
+  position: relative;
+  padding-left: 25px;
+  cursor: pointer;
+  display: inline-block;
+  height: 18px;
+  line-height: 18px;
+  user-select: none;
+}
+
+.filled-in[type="checkbox"] + label:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #5a5a5a;
+  background: white;
+  transition: all 0.2s;
+}
+
+.filled-in[type="checkbox"]:checked + label:before {
+  border-color: #2196f3;
+  background: #2196f3;
+}
+
+.filled-in[type="checkbox"]:checked + label:after {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Labels */
+.label {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 12px;
+}
+
+.label-rounded {
+  border-radius: 12px;
+}
+
+/* Responsive Grid */
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -15px;
+  margin-left: -15px;
+}
+
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.col-sm-1, .col-sm-2, .col-sm-3, .col-sm-4, .col-sm-5, .col-sm-6, 
+.col-sm-7, .col-sm-8, .col-sm-9, .col-sm-10, .col-sm-11, .col-sm-12 {
+  position: relative;
+  min-height: 1px;
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+.col-sm-12 {
+  width: 100%;
+}
+
+.col-sm-6 {
+  width: 50%;
+}
+
+.col-sm-4 {
+  width: 33.33333%;
+}
+
+.col-sm-3 {
+  width: 25%;
+}
+
+/* Responsive Sidebar */
+@media (max-width: 768px) {
+  .sidebar {
+    left: -260px;
+    transition: left 0.3s;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .navbar {
+    left: 0;
+  }
+
+  .content {
+    margin-left: 0;
+  }
+}
+
+/* Additional utilities */
+.font-12 {
+  font-size: 12px;
+}
+
+.help-info {
+  font-size: 12px;
+  color: #666;
+}
+
+.help-info a {
+  color: #2196f3;
+  text-decoration: none;
+}
+
+.help-info a:hover {
+  text-decoration: underline;
+}
+
+.pull-left {
+  float: left;
+}
+
+.bg-orange {
+  background-color: #ff9800 !important;
+}
+
+.col-pink {
+  color: #e91e63;
+}
+
+.custom-padding1 {
+  padding: 8px 0;
+}
+
+.custom-padding2 {
+  padding: 4px 0 20px;
+}
+
+.btn-offset {
+  margin: -4px 0;
+}
+
+.table-offset {
+  margin-top: 15px;
+}
+
+.bottom-offset {
+  margin-bottom: 20px;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }

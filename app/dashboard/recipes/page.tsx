@@ -2,64 +2,126 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, Eye, ChefHat, Search, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import DashboardLayout from '@/components/DashboardLayout';
 
 interface Recipe {
-  id: number;
-  title: string;
+  recipe_id: number;
+  recipe_title: string;
+  recipe_time: string;
+  recipe_image: string;
+  video_id: string;
+  content_type: string;
   category_name: string;
-  cook_time: string;
-  total_views: number;
   featured: number;
-  created_at: string;
+  total_views: number;
 }
 
 export default function RecipesPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [filteredRecipes, setFilteredRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const recipesPerPage = 10;
+  const [keyword, setKeyword] = useState('');
+  const [message, setMessage] = useState('');
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
 
   useEffect(() => {
     fetchRecipes();
   }, []);
 
-  useEffect(() => {
-    // Filter recipes based on search query
-    if (searchQuery.trim() === '') {
-      setFilteredRecipes(recipes);
-    } else {
-      const filtered = recipes.filter(recipe =>
-        recipe.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredRecipes(filtered);
-    }
-    setCurrentPage(1); // Reset to first page when searching
-  }, [searchQuery, recipes]);
-
-  const fetchRecipes = async () => {
+  const fetchRecipes = async (searchKeyword = '') => {
     try {
-      const response = await fetch('/api/recipes');
+      const url = searchKeyword 
+        ? `/api/recipes?keyword=${encodeURIComponent(searchKeyword)}`
+        : '/api/recipes';
+      const response = await fetch(url);
       const data = await response.json();
       
       if (data.success) {
         setRecipes(data.data);
-        setFilteredRecipes(data.data);
-      } else {
-        setError(data.error || 'Failed to load recipes');
       }
     } catch (err) {
-      setError('Failed to load recipes');
+      console.error('Failed to load recipes');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    fetchRecipes(keyword);
+  };
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(recipes.map(r => r.recipe_id));
+    }
+    setSelectAll(!selectAll);
+  };
+
+  const handleSelect = (id: number) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(i => i !== id));
+    } else {
+      setSelectedIds([...selectedIds, id]);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) {
+      alert('Whoops! no recipes selected to delete');
+      return;
+    }
+
+    if (!confirm('Are you sure want to delete all selected recipes?')) return;
+
+    try {
+      const response = await fetch('/api/recipes/bulk-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage(`${selectedIds.length} Selected recipes deleted`);
+        setSelectedIds([]);
+        setSelectAll(false);
+        fetchRecipes();
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (err) {
+      alert('Error deleting records');
+    }
+  };
+
+  const toggleFeatured = async (id: number, currentStatus: number) => {
+    const action = currentStatus === 0 ? 'add' : 'remove';
+    if (!confirm(action === 'add' ? 'Add to featured recipes?' : 'Remove from featured recipes?')) return;
+
+    try {
+      const response = await fetch(`/api/recipes/${id}/featured`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: currentStatus === 0 ? 1 : 0 })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        setMessage(action === 'add' ? 'Success added to featured recipes' : 'Removed from featured recipes');
+        fetchRecipes();
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (err) {
+      alert('Failed to update featured status');
+    }
+  };
+
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this recipe?')) return;
+    if (!confirm('Are you sure want to delete this Recipe?')) return;
 
     try {
       const response = await fetch(`/api/recipes/${id}`, {
@@ -69,278 +131,153 @@ export default function RecipesPage() {
       const data = await response.json();
       
       if (data.success) {
+        setMessage('Recipe deleted successfully');
         fetchRecipes();
-      } else {
-        alert('Failed to delete recipe');
+        setTimeout(() => setMessage(''), 3000);
       }
     } catch (err) {
       alert('Failed to delete recipe');
     }
   };
 
-  const toggleFeatured = async (id: number, currentFeatured: number) => {
-    const newFeatured = currentFeatured === 1 ? 0 : 1;
-    
-    // Check if trying to add to featured and already have 10
-    if (newFeatured === 1) {
-      const featuredCount = recipes.filter(r => r.featured === 1).length;
-      if (featuredCount >= 10) {
-        alert('Maximum 10 featured recipes allowed!');
-        return;
-      }
-    }
-
-    try {
-      const response = await fetch(`/api/recipes/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ featured: newFeatured })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success) {
-        fetchRecipes();
-      } else {
-        alert('Failed to update featured status');
-      }
-    } catch (err) {
-      alert('Failed to update featured status');
-    }
-  };
-
-  // Pagination calculations
-  const indexOfLastRecipe = currentPage * recipesPerPage;
-  const indexOfFirstRecipe = indexOfLastRecipe - recipesPerPage;
-  const currentRecipes = filteredRecipes.slice(indexOfFirstRecipe, indexOfLastRecipe);
-  const totalPages = Math.ceil(filteredRecipes.length / recipesPerPage);
-
-  const goToPage = (page: number) => {
-    setCurrentPage(page);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-orange-500 p-2 rounded-lg">
-                <ChefHat className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Recipe Management</h1>
-                <p className="text-sm text-gray-500">Manage all your recipes</p>
-              </div>
-            </div>
-            <Link 
-              href="/dashboard"
-              className="px-4 py-2 text-gray-700 hover:text-gray-900"
-            >
-              ← Back to Dashboard
+    <DashboardLayout>
+      <ol className="breadcrumb" style={{ display: 'flex', listStyle: 'none', gap: '8px', fontSize: '14px' }}>
+        <li><Link href="/dashboard" style={{ color: '#2196f3', textDecoration: 'none' }}>Dashboard</Link></li>
+        <li style={{ color: '#666' }}>/</li>
+        <li style={{ color: '#666' }}>Manage Recipes</li>
+      </ol>
+
+      <div style={{ padding: '0' }}>
+        <div className="card corner-radius">
+          <div className="header" style={{ padding: '20px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', textTransform: 'uppercase' }}>MANAGE RECIPES</h2>
+            <Link href="/dashboard/recipes/add">
+              <button type="button" className="button button-rounded btn-offset waves-effect waves-float">
+                ADD NEW RECIPES
+              </button>
             </Link>
           </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">All Recipes</h2>
-          <Link
-            href="/dashboard/recipes/add"
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
-          >
-            <Plus className="w-5 h-5" />
-            Add New Recipe
-          </Link>
-        </div>
+          <div className="body table-responsive" style={{ padding: '20px', marginTop: '-10px' }}>
+            
+            {message && (
+              <div className="alert alert-info alert-dismissible corner-radius" style={{ marginBottom: '20px' }}>
+                <button type="button" className="close" onClick={() => setMessage('')}><span>&times;</span></button>
+                {message}
+              </div>
+            )}
 
-        {/* Search Bar */}
-        <div className="mb-6">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search recipes by title..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-            />
-          </div>
-          {searchQuery && (
-            <p className="mt-2 text-sm text-gray-600">
-              Found {filteredRecipes.length} recipe{filteredRecipes.length !== 1 ? 's' : ''}
-            </p>
-          )}
-        </div>
-
-        {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-            <p className="mt-4 text-gray-600">Loading recipes...</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
-
-        {!loading && !error && recipes.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl">
-            <ChefHat className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No recipes yet</h3>
-            <p className="text-gray-600 mb-4">Get started by adding your first recipe!</p>
-            <Link
-              href="/dashboard/recipes/add"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
-            >
-              <Plus className="w-5 h-5" />
-              Add Your First Recipe
-            </Link>
-          </div>
-        )}
-
-        {!loading && !error && recipes.length > 0 && (
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Recipe
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cook Time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Views
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {currentRecipes.map((recipe) => (
-                  <tr key={recipe.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="font-medium text-gray-900">{recipe.title}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                        {recipe.category_name}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {recipe.cook_time || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Eye className="w-4 h-4" />
-                        {recipe.total_views}
+            <form onSubmit={handleSearch}>
+              <table className="table">
+                <tbody>
+                  <tr>
+                    <td>
+                      <div className="form-group form-float">
+                        <div className="form-line">
+                          <input type="text" className="form-control" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="Search..." required />
+                        </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      {recipe.featured === 1 ? (
-                        <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">
-                          Featured
-                        </span>
-                      ) : (
-                        <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded">
-                          Regular
-                        </span>
-                      )}
+                    <td style={{ width: '1%' }}>
+                      <button type="button" onClick={() => { setKeyword(''); fetchRecipes(); }} className="button button-rounded waves-effect waves-float">RESET</button>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => toggleFeatured(recipe.id, recipe.featured)}
-                          className={`p-2 rounded transition ${
-                            recipe.featured === 1
-                              ? 'text-yellow-600 hover:bg-yellow-50'
-                              : 'text-gray-400 hover:bg-gray-50'
-                          }`}
-                          title={recipe.featured === 1 ? 'Remove from Featured' : 'Add to Featured'}
-                        >
-                          <Star className={`w-4 h-4 ${recipe.featured === 1 ? 'fill-current' : ''}`} />
-                        </button>
-                        <Link
-                          href={`/dashboard/recipes/edit?id=${recipe.id}`}
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded transition"
-                          title="Edit"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Link>
-                        <button
-                          onClick={() => handleDelete(recipe.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded transition"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                    <td style={{ width: '1%' }}>
+                      <button type="submit" className="btn bg-blue btn-circle waves-effect waves-circle waves-float" style={{ borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span className="material-icons">search</span>
+                      </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </tbody>
+              </table>
+            </form>
 
-        {/* Pagination */}
-        {!loading && !error && filteredRecipes.length > recipesPerPage && (
-          <div className="mt-6 flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              Showing {indexOfFirstRecipe + 1} to {Math.min(indexOfLastRecipe, filteredRecipes.length)} of {filteredRecipes.length} recipes
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Previous
-              </button>
-              
-              <div className="flex gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <button
-                    key={page}
-                    onClick={() => goToPage(page)}
-                    className={`px-4 py-2 rounded-lg ${
-                      currentPage === page
-                        ? 'bg-orange-500 text-white'
-                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-                    }`}
-                  >
-                    {page}
+            {!loading && recipes.length === 0 ? (
+              <p style={{ textAlign: 'center', fontSize: '110%' }}>There are no recipes.</p>
+            ) : (
+              <>
+                <div style={{ marginLeft: '8px', marginTop: '-36px', marginBottom: '10px' }}>
+                  <button type="button" onClick={handleDeleteSelected} className="button button-rounded waves-effect waves-float">
+                    Delete selected items(s)
                   </button>
-                ))}
-              </div>
+                </div>
 
-              <button
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
+                <table className="table table-hover table-striped">
+                  <thead>
+                    <tr>
+                      <th style={{ width: '1%' }}>
+                        <div style={{ marginBottom: '-15px' }}>
+                          <input id="chk_all" type="checkbox" className="filled-in chk-col-blue" checked={selectAll} onChange={handleSelectAll} />
+                          <label htmlFor="chk_all"></label>
+                        </div>
+                      </th>
+                      <th style={{ width: '35%' }}>Recipe Name</th>
+                      <th style={{ width: '1%' }}>Image</th>
+                      <th style={{ width: '15%' }}>Time</th>
+                      <th style={{ width: '10%' }}>Category</th>
+                      <th style={{ width: '5%' }}>Featured</th>
+                      <th style={{ width: '5%' }}><center>View</center></th>
+                      <th style={{ width: '5%' }}><center>Type</center></th>
+                      <th style={{ width: '25%' }}><center>Action</center></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recipes.map((recipe) => (
+                      <tr key={recipe.recipe_id}>
+                        <td style={{ verticalAlign: 'middle', width: '1%' }}>
+                          <div style={{ marginTop: '10px' }}>
+                            <input type="checkbox" id={`chk-${recipe.recipe_id}`} className="chkbox filled-in chk-col-blue" checked={selectedIds.includes(recipe.recipe_id)} onChange={() => handleSelect(recipe.recipe_id)} />
+                            <label htmlFor={`chk-${recipe.recipe_id}`}></label>
+                          </div>
+                        </td>
+                        <td style={{ verticalAlign: 'middle' }}>{recipe.recipe_title}</td>
+                        <td style={{ verticalAlign: 'middle' }}>
+                          {recipe.content_type === 'youtube' ? (
+                            <img className="img-corner-radius" style={{ objectFit: 'cover' }} src={`https://img.youtube.com/vi/${recipe.video_id}/mqdefault.jpg`} height="60" width="80" />
+                          ) : (
+                            <img className="img-corner-radius" style={{ objectFit: 'cover' }} src={`/upload/${recipe.recipe_image}`} height="60" width="80" />
+                          )}
+                        </td>
+                        <td style={{ verticalAlign: 'middle' }}>{recipe.recipe_time}</td>
+                        <td style={{ verticalAlign: 'middle' }}>{recipe.category_name}</td>
+                        <td style={{ verticalAlign: 'middle' }}>
+                          <center>
+                            <span className="material-icons" style={{ color: recipe.featured === 0 ? 'grey' : '#2196f3', cursor: 'pointer' }} onClick={() => toggleFeatured(recipe.recipe_id, recipe.featured)}>lens</span>
+                          </center>
+                        </td>
+                        <td style={{ verticalAlign: 'middle' }}><center>{recipe.total_views}</center></td>
+                        <td style={{ verticalAlign: 'middle' }}>
+                          <center>
+                            {recipe.content_type === 'Post' ? (
+                              <span className="label label-rounded bg-blue" style={{ background: '#2196f3', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '11px' }}>RECIPE</span>
+                            ) : (
+                              <span className="label label-rounded bg-orange" style={{ background: '#ff9800', color: 'white', padding: '4px 12px', borderRadius: '12px', fontSize: '11px' }}>VIDEO</span>
+                            )}
+                          </center>
+                        </td>
+                        <td style={{ verticalAlign: 'middle' }}>
+                          <center>
+                            <Link href={`/dashboard/recipes/send/${recipe.recipe_id}`}>
+                              <span className="material-icons" style={{ cursor: 'pointer', color: '#666', marginRight: '8px' }}>notifications_active</span>
+                            </Link>
+                            <Link href={`/dashboard/recipes/detail/${recipe.recipe_id}`}>
+                              <span className="material-icons" style={{ cursor: 'pointer', color: '#666', marginRight: '8px' }}>launch</span>
+                            </Link>
+                            <Link href={`/dashboard/recipes/edit/${recipe.recipe_id}`}>
+                              <span className="material-icons" style={{ cursor: 'pointer', color: '#666', marginRight: '8px' }}>mode_edit</span>
+                            </Link>
+                            <span className="material-icons" style={{ cursor: 'pointer', color: '#666' }} onClick={() => handleDelete(recipe.recipe_id)}>delete</span>
+                          </center>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
+            )}
           </div>
-        )}
-      </main>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }

@@ -2,29 +2,32 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Edit, Trash2, ChefHat, FolderOpen } from 'lucide-react';
+import DashboardLayout from '@/components/DashboardLayout';
+import Image from 'next/image';
 
 interface Category {
-  id: number;
-  name: string;
-  image_url: string;
+  cid: number;
+  category_name: string;
+  category_image: string;
 }
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: '', image_url: '' });
-  const [saving, setSaving] = useState(false);
+  const [keyword, setKeyword] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     fetchCategories();
   }, []);
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (searchKeyword = '') => {
     try {
-      const response = await fetch('/api/categories');
+      const url = searchKeyword 
+        ? `/api/categories?keyword=${encodeURIComponent(searchKeyword)}`
+        : '/api/categories';
+      const response = await fetch(url);
       const data = await response.json();
       
       if (data.success) {
@@ -39,183 +42,156 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleAddCategory = async (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
+    fetchCategories(keyword);
+  };
+
+  const handleReset = () => {
+    setKeyword('');
+    fetchCategories();
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Are you sure want to delete this category?')) return;
 
     try {
-      const response = await fetch('/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newCategory)
+      const response = await fetch(`/api/categories/${id}`, {
+        method: 'DELETE'
       });
       
       const data = await response.json();
       
       if (data.success) {
-        setNewCategory({ name: '', image_url: '' });
-        setShowAddForm(false);
+        setMessage('Category deleted successfully');
         fetchCategories();
+        setTimeout(() => setMessage(''), 3000);
       } else {
-        alert('Failed to create category');
+        alert('Failed to delete category');
       }
     } catch (err) {
-      alert('Failed to create category');
-    } finally {
-      setSaving(false);
+      alert('Failed to delete category');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-green-500 p-2 rounded-lg">
-                <FolderOpen className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900">Category Management</h1>
-                <p className="text-sm text-gray-500">Organize recipe categories</p>
-              </div>
-            </div>
-            <Link 
-              href="/dashboard"
-              className="px-4 py-2 text-gray-700 hover:text-gray-900"
-            >
-              ← Back to Dashboard
+    <DashboardLayout>
+      {/* Breadcrumb */}
+      <ol className="breadcrumb" style={{ display: 'flex', listStyle: 'none', gap: '8px', fontSize: '14px' }}>
+        <li><Link href="/dashboard" style={{ color: '#2196f3', textDecoration: 'none' }}>Dashboard</Link></li>
+        <li style={{ color: '#666' }}>/</li>
+        <li style={{ color: '#666' }}>Manage Category</li>
+      </ol>
+
+      <div style={{ padding: '0' }}>
+        <div className="card corner-radius">
+          <div className="header" style={{ padding: '20px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600', textTransform: 'uppercase' }}>MANAGE CATEGORY</h2>
+            <Link href="/dashboard/categories/add">
+              <button type="button" className="button button-rounded btn-offset waves-effect waves-float">
+                ADD NEW CATEGORY
+              </button>
             </Link>
           </div>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">All Categories</h2>
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
-          >
-            <Plus className="w-5 h-5" />
-            {showAddForm ? 'Cancel' : 'Add Category'}
-          </button>
-        </div>
+          <div className="body table-responsive" style={{ padding: '20px', marginTop: '-10px' }}>
+            
+            {message && (
+              <div className="alert alert-info alert-dismissible corner-radius" style={{ marginBottom: '20px' }}>
+                <button type="button" className="close" onClick={() => setMessage('')}>
+                  <span>&times;</span>
+                </button>
+                {message}
+              </div>
+            )}
 
-        {/* Add Category Form */}
-        {showAddForm && (
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Add New Category</h3>
-            <form onSubmit={handleAddCategory} className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Category Name *
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={newCategory.name}
-                  onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
-                  placeholder="e.g., Seafood"
-                  required
-                />
-              </div>
-              <div>
-                <label htmlFor="image_url" className="block text-sm font-medium text-gray-700 mb-2">
-                  Image URL
-                </label>
-                <input
-                  id="image_url"
-                  type="url"
-                  value={newCategory.image_url}
-                  onChange={(e) => setNewCategory({ ...newCategory, image_url: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition disabled:opacity-50"
-              >
-                {saving ? 'Creating...' : 'Create Category'}
-              </button>
+            {/* Search Form */}
+            <form onSubmit={handleSearch} id="form_validation">
+              <table className="table">
+                <tbody>
+                  <tr>
+                    <td>
+                      <div className="form-group form-float">
+                        <div className="form-line">
+                          <input
+                            type="text"
+                            className="form-control"
+                            name="keyword"
+                            value={keyword}
+                            onChange={(e) => setKeyword(e.target.value)}
+                            placeholder="Search..."
+                            required
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td style={{ width: '1%' }}>
+                      <button type="button" onClick={handleReset} className="button button-rounded waves-effect waves-float">
+                        RESET
+                      </button>
+                    </td>
+                    <td style={{ width: '1%' }}>
+                      <button type="submit" className="btn bg-blue btn-circle waves-effect waves-circle waves-float" style={{ borderRadius: '50%', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <span className="material-icons">search</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </form>
-          </div>
-        )}
 
-        {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-            <p className="mt-4 text-gray-600">Loading categories...</p>
-          </div>
-        )}
+            {loading && (
+              <p style={{ textAlign: 'center', fontSize: '110%', padding: '20px' }}>Loading...</p>
+            )}
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
+            {!loading && categories.length === 0 && (
+              <p style={{ textAlign: 'center', fontSize: '110%', padding: '20px' }}>There are no categories.</p>
+            )}
 
-        {!loading && !error && categories.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-xl">
-            <FolderOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No categories yet</h3>
-            <p className="text-gray-600 mb-4">Get started by adding your first category!</p>
+            {!loading && categories.length > 0 && (
+              <table className="table table-hover table-striped table-offset">
+                <thead>
+                  <tr>
+                    <th>Category Name</th>
+                    <th>Image</th>
+                    <th style={{ width: '15%' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((category) => (
+                    <tr key={category.cid}>
+                      <td style={{ verticalAlign: 'middle' }}>{category.category_name}</td>
+                      <td>
+                        <img
+                          className="img-corner-radius"
+                          style={{ objectFit: 'cover' }}
+                          src={`/upload/category/${category.category_image}`}
+                          alt={category.category_name}
+                          width="80"
+                          height="60"
+                        />
+                      </td>
+                      <td style={{ verticalAlign: 'middle' }}>
+                        <Link href={`/dashboard/categories/edit/${category.cid}`}>
+                          <span className="material-icons" style={{ cursor: 'pointer', color: '#666' }}>mode_edit</span>
+                        </Link>
+                        {' '}
+                        <span 
+                          className="material-icons" 
+                          style={{ cursor: 'pointer', color: '#666' }}
+                          onClick={() => handleDelete(category.cid)}
+                        >
+                          delete
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
-        )}
-
-        {!loading && !error && categories.length > 0 && (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {categories.map((category) => (
-              <div 
-                key={category.id}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition group"
-              >
-                {category.image_url ? (
-                  <div className="h-40 bg-gray-200 overflow-hidden">
-                    <img 
-                      src={category.image_url} 
-                      alt={category.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                  </div>
-                ) : (
-                  <div className="h-40 bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
-                    <FolderOpen className="w-16 h-16 text-white opacity-50" />
-                  </div>
-                )}
-                
-                <div className="p-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                    {category.name}
-                  </h3>
-                  
-                  <div className="flex gap-2">
-                    <button
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition"
-                      title="Edit"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button
-                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+        </div>
+      </div>
+    </DashboardLayout>
   );
 }
