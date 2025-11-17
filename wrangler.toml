@@ -2,9 +2,6 @@ name = "recipe-admin-panel"
 compatibility_date = "2024-11-16"
 pages_build_output_dir = ".vercel/output/static"
 
-[build]
-command = "npm run pages:build"
-
 # D1 Database binding
 [[d1_databases]]
 binding = "DB"
