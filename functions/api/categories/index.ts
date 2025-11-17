@@ -4,10 +4,32 @@
 export async function onRequestGet(context: any) {
   try {
     const { DB } = context.env;
+    const url = new URL(context.request.url);
+    const keyword = url.searchParams.get('keyword');
     
-    const { results } = await DB.prepare(`
-      SELECT * FROM category ORDER BY name ASC
-    `).all();
+    let query = `
+      SELECT 
+        id as cid,
+        name as category_name,
+        image_url as category_image,
+        created_at
+      FROM category
+    `;
+    
+    if (keyword) {
+      query += ` WHERE name LIKE ?`;
+      const { results } = await DB.prepare(query + ` ORDER BY name ASC`)
+        .bind(`%${keyword}%`)
+        .all();
+      return new Response(JSON.stringify({
+        success: true,
+        data: results
+      }), {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    
+    const { results } = await DB.prepare(query + ` ORDER BY name ASC`).all();
 
     return new Response(JSON.stringify({
       success: true,
