@@ -1,4 +1,5 @@
 // Authentication endpoint
+import bcrypt from 'bcryptjs';
 
 export async function onRequestPost(context: any) {
   try {
@@ -24,13 +25,8 @@ export async function onRequestPost(context: any) {
       });
     }
 
-    // In production, you would verify password with bcrypt here
-    // For now, we'll do a simple check (NOT SECURE - placeholder only)
-    // const bcrypt = require('bcryptjs');
-    // const valid = await bcrypt.compare(password, user.password);
-    
-    // Simplified auth - in production use proper bcrypt verification
-    const validPassword = password === 'Angvaiti@1' && username === 'buhumsolen';
+    // Verify password with bcrypt
+    const validPassword = await bcrypt.compare(password, user.password);
     
     if (!validPassword) {
       return new Response(JSON.stringify({
