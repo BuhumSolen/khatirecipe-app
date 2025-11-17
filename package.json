@@ -5,10 +5,10 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build && node -e \"require('fs').cpSync('functions', 'out/functions', {recursive: true})\"",
-    "pages:build": "npx @cloudflare/next-on-pages",
+    "pages:build": "next build && node -e \"require('fs').cpSync('functions', 'out/functions', {recursive: true})\"",
     "start": "next start",
     "lint": "eslint",
-    "preview": "wrangler pages dev .vercel/output/static",
+    "preview": "wrangler pages dev out",
     "deploy": "npm run build && wrangler pages deploy out --project-name=khatirecipe-app"
   },
   "dependencies": {
