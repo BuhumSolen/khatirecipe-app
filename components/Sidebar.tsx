@@ -26,7 +26,6 @@ export default function Sidebar({ username = 'admin', email = 'admin@example.com
     { path: '/dashboard/admin', icon: 'people', label: 'Administrator' },
     { path: '/dashboard/settings', icon: 'settings', label: 'Settings' },
     { path: '/dashboard/apps', icon: 'adb', label: 'Manage Apps' },
-    { path: '/dashboard/license', icon: 'vpn_key', label: 'License' },
   ];
 
   return (

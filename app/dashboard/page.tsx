@@ -91,13 +91,6 @@ export default function DashboardPage() {
       label: 'Key and Privacy Settings',
       link: '/dashboard/settings',
       color: '#2196f3'
-    },
-    {
-      title: 'LICENSE',
-      icon: 'vpn_key',
-      label: 'Envato Item Purchase Code',
-      link: '/dashboard/license',
-      color: '#2196f3'
     }
   ];
 
